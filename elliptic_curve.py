@@ -14,9 +14,8 @@ class Point:
         self.curve = curve
 
     def is_on_curve(self):
-        lhs = self.y**2
-        rhs = self.x**3 + self.curve.a*self.x + self.curve.b
-
+        lhs = (self.y**2) % self.curve.p
+        rhs = (self.x**3 + self.curve.a*self.x + self.curve.b) % self.curve.p
         return round(lhs, 6) == round(rhs, 6)
 
     def __add__(self, other):
@@ -25,6 +24,12 @@ class Point:
         
         if not (isinstance(self, Point) and isinstance(other, Point)):
             raise TypeError('Expected objects of class Point.')
+
+        if self.x==None:
+            return other
+        
+        if other.x==None:
+            return self
 
         # points are inverses of each other
         if self.x == other.x and self.y == -(other.y-self.curve.p):
@@ -40,7 +45,19 @@ class Point:
         
         x3 = (m**2 - self.x - other.x) % self.curve.p
         y3 = (-(m * (x3 - self.x) + self.y)) % self.curve.p
+        
         return Point(x=x3, y=y3, curve=self.curve)
+    
+    def __mul__(self, other):
+        track = [(1, self)]
+        while (track[-1][0] + track[-1][0]) < other:
+            track.append( (track[-1][0] + track[-1][0], track[-1][1] + track[-1][1]) )
+
+        for tracker, result in reversed(track):
+            if (track[-1][0] + tracker) <= other:
+                track.append( (track[-1][0] + tracker, track[-1][1] + result))
+        
+        return track[-1][1]
 
 bitcoin_curve = Curve(
     a = 0,
@@ -48,14 +65,13 @@ bitcoin_curve = Curve(
     p = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F
 )
 
-if __name__ == '__main__':
-    point1 = Point(x=1, y=8**(1/2), curve=bitcoin_curve)
-    point2 = Point(x=2, y=15**(1/2), curve=bitcoin_curve)
-    point3 = point1 + point2
-    point4 = point1 + point1
-    print(point3.x, point3.y)
-    print(point4.x, point4.y)
-    print('\n')
+bitcoin_G = Point(
+    x = 0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798,
+    y = 0x483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8,
+    curve = bitcoin_curve
+)
 
-    print(f'point1 is on curve: {point1.is_on_curve()}')
-    print(f'point3 is on curve: {point3.is_on_curve()}')
+if __name__ == '__main__':
+    print(bitcoin_G.is_on_curve())
+    g3 = bitcoin_G*3
+    print(g3.is_on_curve())

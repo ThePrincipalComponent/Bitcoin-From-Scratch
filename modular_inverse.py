@@ -9,3 +9,7 @@ def inv(a, p):
         old_s, s = s, old_s - quotient * s
     
     return old_s % p
+
+if __name__ == '__main__':
+    print(inv(3,5))
+    print(inv(5,11))
